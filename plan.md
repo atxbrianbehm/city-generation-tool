@@ -36,6 +36,13 @@
 - [x] Copy current plan.md into project folder
 - [x] Create Windsurf rules file for plan synchronization
 
+### 0. Deployment to GitHub Pages (June 2025)
+- [x] Create `.github/workflows/deploy.yml` using `actions/upload-artifact@v4` and `actions/deploy-pages@v4`.
+- [x] Add fallback workflow `.github/workflows/pages.yml` with `actions/upload-pages-artifact@v1`, `configure-pages@v4`, and `deploy-pages@v4`.
+- [x] Commit and push workflows.
+- [x] Fix incorrect action version (`upload-pages-artifact` → `v1`).
+- [x] Verify workflow success and share public URL with team.
+
 ## Detailed Upcoming Tasks (Q3 2025)
 
 ### 1. Move legend outside canvas
@@ -45,8 +52,8 @@
 - [ ] Position top-left via absolute positioning; retain drag-ability (optional).
 
 ### 2. Zoom & Pan interactions
-- [ ] Add `zoom` and `offset` state to `CityRenderer`.
-- [ ] Implement mouse wheel (with `ctrlKey` to prevent page scroll) to change zoom (0.25×-4×).
+- [x] Add `zoom` and `offset` state to `CityRenderer`.
+- [ ] Implement mouse wheel zoom that always centers on the pointer position (requires transforming offsets before scaling).
 - [ ] Implement pointer drag (mouse left / touch one-finger) to pan; update offsets.
 - [ ] Implement pinch-zoom and two-finger pan on touch devices.
 - [ ] Debounce redraws for performance; throttle to animation frame.

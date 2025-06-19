@@ -37,7 +37,7 @@
 - [x] Create Windsurf rules file for plan synchronization
 
 ## Current Goal
-Application complete and functional! Ready for testing, refinement, and additional features.
+Design topography tool with dynamic water features and visual key
 
 Next steps:
 - Test all algorithm combinations and parameter ranges
@@ -45,3 +45,12 @@ Next steps:
 - Add more visual polish and effects
 - Consider additional export formats (PNG, SVG, JSON)
 - Mobile responsiveness improvements
+
+## Upcoming Enhancements (June 2025)
+- [ ] Design and implement topography tool (adjustable land/water using noise; support rivers, lakes, bays)
+- [ ] Integrate topography with generation algorithms to prevent overlap
+- [ ] Add visual key / legend for map squares
+- [ ] Draw proportional road indicators
+- [ ] Add scale indicator overlay on canvas
+- [ ] Dark mode color scheme
+- [ ] Improve slider UX (drag smoothing)

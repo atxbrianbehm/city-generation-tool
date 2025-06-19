@@ -70,6 +70,16 @@ class CityGenerationTool {
             });
         });
 
+        // Topography controls
+        const waterSlider = document.getElementById('water-coverage');
+        const waterVal = document.getElementById('water-coverage-val');
+        waterSlider.addEventListener('input', (e) => {
+            waterVal.textContent = `${e.target.value}%`;
+        });
+        document.getElementById('generate-topo-btn').addEventListener('click', () => {
+            this.generateTopography();
+        });
+
         // Action buttons
         document.getElementById('generate-btn').addEventListener('click', () => {
             this.generateCity();
@@ -87,7 +97,11 @@ class CityGenerationTool {
         window.addEventListener('resize', () => {
             this.updateCanvasSize();
             if (this.currentCity) {
-                this.renderer.render(this.currentCity);
+               // Ensure no buildings overlap water
+            if (this.waterCells && this.waterCells.length) {
+                this.currentCity.buildings = this.currentCity.buildings.filter(b => !this.isInWater(b));
+            }
+            this.renderer.render(this.currentCity);
             }
         });
     }
@@ -120,10 +134,17 @@ class CityGenerationTool {
 
     getActiveAlgorithms() {
         const active = [];
-        
+        const sliderIdMap = {
+            'grid-layout': 'grid-weight',
+            'poisson-disk': 'poisson-weight',
+            'random-walk': 'random-walk-weight',
+            'cellular-automata': 'cellular-automata-weight',
+            'voronoi': 'voronoi-weight',
+            'wfc': 'wfc-weight'
+        };
         document.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
             const algorithmKey = this.getAlgorithmKey(checkbox.id);
-            const sliderId = checkbox.id.replace(/([A-Z])/g, '-$1').toLowerCase().replace(/^-/, '') + '-weight';
+            const sliderId = sliderIdMap[checkbox.id];
             const weightSlider = document.getElementById(sliderId);
             if (!weightSlider) {
                 console.warn(`Weight slider not found for algorithm: ${algorithmKey} (expected id: ${sliderId})`);
@@ -199,6 +220,17 @@ class CityGenerationTool {
         };
     }
 
+    generateTopography() {
+        const coverage = parseInt(document.getElementById('water-coverage').value) / 100;
+        const topoGen = new TopographyGenerator(this.canvas.width, this.canvas.height, 10, {
+            waterCoverage: coverage,
+            seed: this.getGlobalParams().seed
+        });
+        this.waterCells = topoGen.generate();
+        // Render only topography for preview
+        this.renderer.render({ buildings: [], roads: [], parks: [], water: this.waterCells });
+    }
+
     async generateCity() {
         if (this.isGenerating) return;
         
@@ -210,7 +242,7 @@ class CityGenerationTool {
             const globalParams = this.getGlobalParams();
             
             if (activeAlgorithms.length === 0) {
-                this.currentCity = { buildings: [], roads: [], parks: [], water: [] };
+                this.currentCity = { buildings: [], roads: [], parks: [], water: this.waterCells || [] };
             } else {
                 this.currentCity = await this.blendAlgorithms(activeAlgorithms, globalParams);
             }
@@ -247,12 +279,17 @@ class CityGenerationTool {
         return this.blendResults(results, globalParams);
     }
 
+    isInWater(rect) {
+        if (!this.waterCells) return false;
+        return this.waterCells.some(w => rect.x < w.x + w.width && rect.x + rect.width > w.x && rect.y < w.y + w.height && rect.y + rect.height > w.y);
+    }
+
     blendResults(results, globalParams) {
         const blended = {
+            water: this.waterCells || [],
             buildings: [],
             roads: [],
-            parks: [],
-            water: []
+            parks: []
         };
         
         results.forEach(result => {

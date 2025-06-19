@@ -31,14 +31,20 @@ class CityRenderer {
         this.clearCanvas();
         this.drawBackground();
         
+        // Apply pan & zoom transform
+        this.ctx.save();
+        this.ctx.translate(this.offsetX, this.offsetY);
+        this.ctx.scale(this.scale, this.scale);
+
         // Render in layers for proper z-ordering
         this.drawWater(city.water || []);
         this.drawParks(city.parks || []);
         this.drawRoads(city.roads || []);
         this.drawBuildings(city.buildings || []);
-        
         this.drawGrid();
-        this.drawLegend();
+
+        this.ctx.restore();
+
         this.drawScaleBar();
     }
 
@@ -308,8 +314,31 @@ class CityRenderer {
         }
     }
 
+    pan(dx, dy) {
+        this.offsetX += dx;
+        this.offsetY += dy;
+    }
+
+    zoomAt(screenX, screenY, factor) {
+        // Convert screen → world before zoom
+        const worldX = (screenX - this.offsetX) / this.scale;
+        const worldY = (screenY - this.offsetY) / this.scale;
+        this.scale = Math.max(0.25, Math.min(4, this.scale * factor));
+        // Recompute offset so the zoom happens about the cursor
+        this.offsetX = screenX - worldX * this.scale;
+        this.offsetY = screenY - worldY * this.scale;
+    }
+
     drawScaleBar() {
-        const barWidth = 100; // pixels representing ~100 m
+        // Choose "nice" bar length 10-1000 m that falls between 80-150 px
+        const candidateMetres = [10, 20, 50, 100, 200, 500, 1000];
+        const metresPerPixel = 1 / this.scale; // 1 px ≈ 1 m at scale 1
+        let barMetres = 100;
+        for (const m of candidateMetres) {
+            const px = m / metresPerPixel;
+            if (px >= 80 && px <= 150) { barMetres = m; break; }
+        }
+        const barWidth = barMetres / metresPerPixel;
         const barHeight = 6;
         const margin = 20;
         const x = this.canvas.width - barWidth - margin;
@@ -327,7 +356,7 @@ class CityRenderer {
         this.ctx.fillStyle = '#e0e0e0';
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'top';
-        this.ctx.fillText('100 m', x + barWidth / 2, y + barHeight + 4);
+        this.ctx.fillText(`${barMetres} m`, x + barWidth / 2, y + barHeight + 4);
     }
 
     drawLegend() {

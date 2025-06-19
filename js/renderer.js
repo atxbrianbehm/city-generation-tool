@@ -164,12 +164,26 @@ class CityRenderer {
         this.ctx.save();
         this.ctx.globalAlpha = opacity || 1;
         
+        const lineWidth = direction === 'horizontal' ? height : width;
+        this.ctx.strokeStyle = this.colors.roads;
+        this.ctx.lineWidth = lineWidth;
+        this.ctx.lineCap = 'round';
+
         if (direction === 'horizontal') {
-            this.ctx.fillRect(x, y, width, height);
+            const centerY = y + height / 2;
+            this.ctx.beginPath();
+            this.ctx.moveTo(x, centerY);
+            this.ctx.lineTo(x + width, centerY);
+            this.ctx.stroke();
         } else if (direction === 'vertical') {
-            this.ctx.fillRect(x, y, width, height);
+            const centerX = x + width / 2;
+            this.ctx.beginPath();
+            this.ctx.moveTo(centerX, y);
+            this.ctx.lineTo(centerX, y + height);
+            this.ctx.stroke();
         } else {
-            // Default rectangular road
+            // Fallback rectangle
+            this.ctx.fillStyle = this.colors.roads;
             this.ctx.fillRect(x, y, width, height);
         }
         
@@ -179,12 +193,13 @@ class CityRenderer {
     drawRoadMarkings(road) {
         const { x, y, width, height, direction } = road;
         
-        if (direction === 'horizontal' && height > 6) {
+        // Only draw markings for roads wider than 8px
+        if (direction === 'horizontal' && height > 8) {
             this.ctx.beginPath();
             this.ctx.moveTo(x, y + height / 2);
             this.ctx.lineTo(x + width, y + height / 2);
             this.ctx.stroke();
-        } else if (direction === 'vertical' && width > 6) {
+        } else if (direction === 'vertical' && width > 8) {
             this.ctx.beginPath();
             this.ctx.moveTo(x + width / 2, y);
             this.ctx.lineTo(x + width / 2, y + height);

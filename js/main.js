@@ -35,21 +35,28 @@ class CityGenerationTool {
             checkbox.addEventListener('change', (e) => {
                 const algorithmName = e.target.id.replace('-', '');
                 const weightSlider = document.getElementById(algorithmName.replace(/([A-Z])/g, '-$1').toLowerCase() + '-weight');
-                if (weightSlider) {
-                    weightSlider.disabled = !e.target.checked;
-                    if (!e.target.checked) {
-                        weightSlider.value = 0;
-                        this.updateWeightDisplay(weightSlider);
-                    }
+                // Keep slider always enabled; if user unchecked box manually, reset weight to 0
+                if (!e.target.checked && weightSlider) {
+                    weightSlider.value = 0;
+                    this.updateWeightDisplay(weightSlider);
                 }
                 this.normalizeWeights();
                 this.generateCity();
             });
         });
 
-        // Weight sliders
+        // Weight sliders (auto-enable on drag)
         document.querySelectorAll('.blend-slider').forEach(slider => {
+            const associatedCheckbox = slider.closest('.algorithm-item').querySelector('input[type="checkbox"]');
+            slider.addEventListener('pointerdown', () => {
+                if (associatedCheckbox && !associatedCheckbox.checked) {
+                    associatedCheckbox.checked = true;
+                }
+            });
             slider.addEventListener('input', (e) => {
+                if (associatedCheckbox && !associatedCheckbox.checked) {
+                    associatedCheckbox.checked = true;
+                }
                 this.updateWeightDisplay(e.target);
                 this.normalizeWeights();
                 this.generateCity();
@@ -111,6 +118,20 @@ class CityGenerationTool {
             this.renderer.render(this.currentCity);
         });
         this.canvas.addEventListener('pointerup', () => { this.isPanning = false; });
+
+        /* ------- Drag-and-drop algorithm ordering (SortableJS) ------- */
+        if (window.Sortable) {
+            new Sortable(document.querySelector('.algorithm-list'), {
+                animation: 150,
+                handle: '.algorithm-header',
+                fallbackOnBody: true,
+                swapThreshold: 0.65,
+                onEnd: () => {
+                    // After reorder, regenerate city to respect new primary algorithm
+                    this.generateCity();
+                }
+            });
+        }
 
         // Topography controls
         const waterSlider = document.getElementById('water-coverage');

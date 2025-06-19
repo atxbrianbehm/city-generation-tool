@@ -123,7 +123,12 @@ class CityGenerationTool {
         
         document.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
             const algorithmKey = this.getAlgorithmKey(checkbox.id);
-            const weightSlider = document.getElementById(checkbox.id.replace(/([A-Z])/g, '-$1').toLowerCase().replace(/^-/, '') + '-weight');
+            const sliderId = checkbox.id.replace(/([A-Z])/g, '-$1').toLowerCase().replace(/^-/, '') + '-weight';
+            const weightSlider = document.getElementById(sliderId);
+            if (!weightSlider) {
+                console.warn(`Weight slider not found for algorithm: ${algorithmKey} (expected id: ${sliderId})`);
+                return; // Skip this algorithm if slider is missing
+            }
             const weight = parseInt(weightSlider.value) / 100;
             
             if (weight > 0 && this.algorithms[algorithmKey]) {

@@ -39,6 +39,7 @@ class CityRenderer {
         
         this.drawGrid();
         this.drawLegend();
+        this.drawScaleBar();
     }
 
     clearCanvas() {
@@ -290,6 +291,28 @@ class CityRenderer {
             this.ctx.lineTo(this.canvas.width, y);
             this.ctx.stroke();
         }
+    }
+
+    drawScaleBar() {
+        const barWidth = 100; // pixels representing ~100 m
+        const barHeight = 6;
+        const margin = 20;
+        const x = this.canvas.width - barWidth - margin;
+        const y = this.canvas.height - barHeight - 40;
+
+        this.ctx.fillStyle = '#e0e0e0';
+        this.ctx.fillRect(x, y, barWidth, barHeight);
+
+        // outline
+        this.ctx.strokeStyle = '#555';
+        this.ctx.lineWidth = 1;
+        this.ctx.strokeRect(x, y, barWidth, barHeight);
+
+        this.ctx.font = '12px Arial';
+        this.ctx.fillStyle = '#e0e0e0';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'top';
+        this.ctx.fillText('100 m', x + barWidth / 2, y + barHeight + 4);
     }
 
     drawLegend() {

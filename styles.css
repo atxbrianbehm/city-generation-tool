@@ -254,23 +254,34 @@ input[type="range"] {
 }
 
 input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
     background: linear-gradient(135deg, #667eea, #764ba2);
     border-radius: 50%;
+    border: 2px solid #e0e0e0;
     cursor: pointer;
+    transition: transform 0.2s ease;
 }
 
+input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+}
+
+
 input[type="range"]::-moz-range-thumb {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
     background: linear-gradient(135deg, #667eea, #764ba2);
     border-radius: 50%;
+    border: 2px solid #e0e0e0;
     cursor: pointer;
-    border: none;
+    transition: transform 0.2s ease;
 }
+
+input[type="range"]::-moz-range-thumb:hover {
+    transform: scale(1.2);
+}
+
 
 /* Responsive Design */
 @media (max-width: 1024px) {

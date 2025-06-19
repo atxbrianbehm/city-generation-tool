@@ -56,6 +56,19 @@ class CityGenerationTool {
             });
         });
 
+        // Slider value indicators
+        document.querySelectorAll('input[type="range"]').forEach(range => {
+            if (range.dataset.hasIndicator) return;
+            const span = document.createElement('span');
+            span.className = 'slider-val';
+            span.textContent = range.value;
+            range.insertAdjacentElement('afterend', span);
+            range.dataset.hasIndicator = 'true';
+            range.addEventListener('input', () => {
+                span.textContent = range.value;
+            });
+        });
+
         // Parameter controls
         document.querySelectorAll('.algorithm-params input').forEach(input => {
             input.addEventListener('input', () => {

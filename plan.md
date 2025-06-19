@@ -37,7 +37,7 @@
 - [x] Create Windsurf rules file for plan synchronization
 
 ## Current Goal
-Design topography tool with dynamic water features and visual key
+Add proportional road indicators and scale bar overlay
 
 Next steps:
 - Test all algorithm combinations and parameter ranges
@@ -47,10 +47,32 @@ Next steps:
 - Mobile responsiveness improvements
 
 ## Upcoming Enhancements (June 2025)
-- [ ] Design and implement topography tool (adjustable land/water using noise; support rivers, lakes, bays)
-- [ ] Integrate topography with generation algorithms to prevent overlap
-- [ ] Add visual key / legend for map squares
-- [ ] Draw proportional road indicators
-- [ ] Add scale indicator overlay on canvas
-- [ ] Dark mode color scheme
-- [ ] Improve slider UX (drag smoothing)
+- [x] Design and implement topography tool (adjustable land/water using noise; support rivers, lakes, bays)
+  - [x] Research/select 2D noise library or write custom noise function
+  - [x] Implement noise-based land/water classification (thresholding)
+  - [x] Add river mode (trace path between edges, mark as water)
+  - [x] Add bay mode (lower threshold near one edge)
+  - [x] Expose water coverage, river width, noise frequency, and seed as UI sliders/inputs
+  - [x] Store topography grid for use by city generation
+  - [x] Add "Generate Topography" button and logic
+  - [x] Integrate topography with city generation (skip water cells)
+  - [x] Render water layer on canvas (blue fill, dark scheme ready)
+- [x] Add a visual key/legend for map squares
+  - [x] Design legend UI (sidebar or overlay)
+  - [x] Add color/symbol explanations for water, land, roads, buildings
+  - [x] Render legend in app
+- [x] Prevent overlap of squares with models
+  - [x] Update model placement logic to check topography grid
+  - [x] Ensure no city elements overlap water
+- [ ] Add proportional visual indicators for roads
+  - [ ] Design road rendering logic (polylines/curves, not just grid)
+  - [ ] Draw roads proportional to their type/width
+- [ ] Add a scale indicator to the canvas
+  - [ ] Design scale bar overlay (like Google Maps)
+  - [ ] Make scale respond to zoom/scale changes
+- [x] Update color scheme to a dark mode
+  - [x] Redesign CSS for dark theme
+  - [x] (Optional) Add dark/light mode toggle
+- [ ] Improve slider UX for smooth adjustment
+  - [ ] Ensure all sliders are smoothly draggable (not just clickable)
+  - [ ] Update input types or JS as needed

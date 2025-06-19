@@ -7,8 +7,8 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: #333;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    color: #e0e0e0;
     min-height: 100vh;
 }
 
@@ -21,7 +21,7 @@ body {
 
 /* Header */
 .header {
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(30, 30, 40, 0.95);
     backdrop-filter: blur(10px);
     padding: 1rem 2rem;
     box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
@@ -39,7 +39,7 @@ body {
 }
 
 .header p {
-    color: #666;
+    color: #ccc;
     font-size: 0.9rem;
 }
 
@@ -55,7 +55,7 @@ body {
 /* Sidebar */
 .sidebar {
     width: 350px;
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(30, 30, 40, 0.95);
     backdrop-filter: blur(10px);
     border-radius: 12px;
     padding: 1.5rem;
@@ -66,7 +66,7 @@ body {
 
 .sidebar h3 {
     margin-bottom: 1rem;
-    color: #333;
+    color: #e0e0e0;
     font-size: 1.1rem;
     font-weight: 600;
 }
@@ -74,21 +74,21 @@ body {
 /* Algorithm Controls */
 .algorithm-item {
     margin-bottom: 1.5rem;
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
     overflow: hidden;
     transition: all 0.3s ease;
 }
 
 .algorithm-item:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
 }
 
 .algorithm-header {
     display: flex;
     align-items: center;
     padding: 0.75rem;
-    background: #f8f9fa;
+    background: #333;
     cursor: pointer;
     font-weight: 500;
     gap: 0.5rem;
@@ -101,6 +101,7 @@ body {
 .algorithm-header span {
     flex: 1;
     font-size: 0.9rem;
+    color: #e0e0e0;
 }
 
 .blend-slider {
@@ -110,13 +111,13 @@ body {
 
 .weight-value {
     font-size: 0.8rem;
-    color: #666;
+    color: #ccc;
     min-width: 35px;
 }
 
 .algorithm-params {
     padding: 1rem;
-    background: white;
+    background: #333;
     display: none;
 }
 
@@ -135,7 +136,7 @@ body {
     justify-content: space-between;
     align-items: center;
     font-size: 0.85rem;
-    color: #555;
+    color: #ccc;
 }
 
 .param-group input[type="range"] {
@@ -146,16 +147,18 @@ body {
 .param-group input[type="number"] {
     width: 80px;
     padding: 0.25rem;
-    border: 1px solid #ddd;
+    border: 1px solid #555;
     border-radius: 4px;
     font-size: 0.85rem;
+    background: #333;
+    color: #e0e0e0;
 }
 
 /* Global Controls */
 .global-controls {
     margin-top: 2rem;
     padding-top: 1.5rem;
-    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .action-buttons {
@@ -177,7 +180,7 @@ body {
 
 .primary-btn {
     background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
+    color: #e0e0e0;
 }
 
 .primary-btn:hover {
@@ -186,13 +189,13 @@ body {
 }
 
 .secondary-btn {
-    background: #f8f9fa;
-    color: #333;
-    border: 1px solid #ddd;
+    background: #333;
+    color: #e0e0e0;
+    border: 1px solid #555;
 }
 
 .secondary-btn:hover {
-    background: #e9ecef;
+    background: #444;
 }
 
 /* Canvas Area */
@@ -200,7 +203,7 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(30, 30, 40, 0.95);
     backdrop-filter: blur(10px);
     border-radius: 12px;
     padding: 1.5rem;
@@ -208,9 +211,9 @@ body {
 }
 
 #city-canvas {
-    border: 1px solid #ddd;
+    border: 1px solid #555;
     border-radius: 8px;
-    background: #fff;
+    background: #333;
     cursor: crosshair;
     max-width: 100%;
     height: auto;
@@ -221,23 +224,23 @@ body {
 }
 
 .stats-panel {
-    background: #f8f9fa;
+    background: #333;
     padding: 1rem;
     border-radius: 8px;
-    border: 1px solid #ddd;
+    border: 1px solid #555;
 }
 
 .stats-panel h4 {
     margin-bottom: 0.5rem;
     font-size: 0.9rem;
-    color: #555;
+    color: #ccc;
 }
 
 #generation-stats {
     display: flex;
     gap: 1rem;
     font-size: 0.85rem;
-    color: #666;
+    color: #ccc;
 }
 
 /* Range Input Styling */
@@ -245,7 +248,7 @@ input[type="range"] {
     -webkit-appearance: none;
     appearance: none;
     height: 4px;
-    background: #ddd;
+    background: #555;
     border-radius: 2px;
     outline: none;
 }
@@ -287,15 +290,15 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .sidebar::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: #333;
     border-radius: 3px;
 }
 
 .sidebar::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
+    background: #555;
     border-radius: 3px;
 }
 
 .sidebar::-webkit-scrollbar-thumb:hover {
-    background: #a8a8a8;
+    background: #666;
 }

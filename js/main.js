@@ -76,6 +76,23 @@ class CityGenerationTool {
         waterSlider.addEventListener('input', (e) => {
             waterVal.textContent = `${e.target.value}%`;
         });
+        
+        const topoMode = document.getElementById('topo-mode');
+        const riverWidthContainer = document.getElementById('river-width-container');
+        const bayDirectionContainer = document.getElementById('bay-direction-container');
+        const riverWidthSlider = document.getElementById('river-width');
+        const riverWidthVal = document.getElementById('river-width-val');
+        
+        topoMode.addEventListener('change', (e) => {
+            const mode = e.target.value;
+            riverWidthContainer.style.display = mode === 'river' ? 'block' : 'none';
+            bayDirectionContainer.style.display = mode === 'bay' ? 'block' : 'none';
+        });
+        
+        riverWidthSlider.addEventListener('input', (e) => {
+            riverWidthVal.textContent = e.target.value;
+        });
+        
         document.getElementById('generate-topo-btn').addEventListener('click', () => {
             this.generateTopography();
         });
@@ -222,9 +239,15 @@ class CityGenerationTool {
 
     generateTopography() {
         const coverage = parseInt(document.getElementById('water-coverage').value) / 100;
+        const mode = document.getElementById('topo-mode').value;
+        const riverWidth = mode === 'river' ? parseInt(document.getElementById('river-width').value) : 0;
+        const bayDirection = mode === 'bay' ? document.getElementById('bay-direction').value : 'top';
         const topoGen = new TopographyGenerator(this.canvas.width, this.canvas.height, 10, {
             waterCoverage: coverage,
-            seed: this.getGlobalParams().seed
+            seed: this.getGlobalParams().seed,
+            mode,
+            riverWidth,
+            bayDirection
         });
         this.waterCells = topoGen.generate();
         // Render only topography for preview

@@ -125,6 +125,22 @@
                 <div class="topography-controls">
                         <h3>Topography</h3>
                         <label>Water Coverage: <input type="range" min="0" max="100" value="30" id="water-coverage"> <span id="water-coverage-val">30%</span></label>
+                        <label>Mode: 
+                            <select id="topo-mode">
+                                <option value="lake">Lake</option>
+                                <option value="river">River</option>
+                                <option value="bay">Bay</option>
+                            </select>
+                        </label>
+                        <label id="river-width-container" style="display: none;">River Width: <input type="range" min="1" max="8" value="3" id="river-width"> <span id="river-width-val">3</span></label>
+                        <label id="bay-direction-container" style="display: none;">Bay Direction: 
+                            <select id="bay-direction">
+                                <option value="top">From Top</option>
+                                <option value="bottom">From Bottom</option>
+                                <option value="left">From Left</option>
+                                <option value="right">From Right</option>
+                            </select>
+                        </label>
                         <button id="generate-topo-btn" class="small-btn">Generate Topography</button>
                     </div>
 

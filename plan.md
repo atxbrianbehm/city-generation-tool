@@ -36,7 +36,58 @@
 - [x] Copy current plan.md into project folder
 - [x] Create Windsurf rules file for plan synchronization
 
+## Detailed Upcoming Tasks (Q3 2025)
+
+### 1. Move legend outside canvas
+- [ ] Remove `drawLegend()` from renderer.
+- [ ] Create reusable Legend `<div>` with flex layout and color swatches.
+- [ ] Style with CSS variables for dark/light themes.
+- [ ] Position top-left via absolute positioning; retain drag-ability (optional).
+
+### 2. Zoom & Pan interactions
+- [ ] Add `zoom` and `offset` state to `CityRenderer`.
+- [ ] Implement mouse wheel (with `ctrlKey` to prevent page scroll) to change zoom (0.25×-4×).
+- [ ] Implement pointer drag (mouse left / touch one-finger) to pan; update offsets.
+- [ ] Implement pinch-zoom and two-finger pan on touch devices.
+- [ ] Debounce redraws for performance; throttle to animation frame.
+- [ ] Ensure all drawing helpers respect `zoom` & `offset`.
+
+### 3. Dynamic scale bar
+- [ ] Compute real-world metres per pixel from `zoom`.
+- [ ] Choose ‘nice’ scale length (e.g. 50 m, 100 m, 250 m) based on rule of 2-5 cm on screen.
+- [ ] Update scale bar overlay text & width after zoom.
+
+### 4. Slider UX + auto-enable
+- [ ] Replace current range inputs with native sliders (keep) but attach `pointerdown/move` listeners for smooth drag in all browsers.
+- [ ] On first drag event, automatically check the associated algorithm checkbox (if unchecked).
+- [ ] Update weight normalisation after enabling.
+- [ ] Visually highlight sliders that are active.
+
+### 5. Drag-and-drop algorithm ordering
+- [ ] Wrap algorithm list in sortable `<ul>`; use minimal vanilla drag-n-drop or `SortableJS` (no build step) for touch + mouse.
+- [ ] Persist order to `localStorage` for session recall.
+- [ ] Modify blending logic: top list item weight counts as “primary” multiplier or first evaluation.
+- [ ] Provide UI affordance (☰ grip icon).
+
+### 6. Topography contour lines
+- [ ] Increase resolution of elevation grid (e.g. 2× cell size) for smoother contours.
+- [ ] Run Marching Squares to extract contour segments every N elevation units.
+- [ ] Convert segments to Catmull-Rom splines for smooth curves.
+- [ ] Render below roads/buildings in muted colour.
+
+### 7. Roads & elevation interaction
+- [ ] Add global probability slider “Roads follow terrain”.
+- [ ] When true, road generator samples elevation along candidate path; if gradient > threshold, reroute (Bresenham climb) or terminate.
+- [ ] For water bodies: truncate road N pixels before shoreline.
+- [ ] Draw cul-de-sac cap for dead ends.
+
+### 8. Advanced water generation (research)
+- [ ] Evaluate combining FBM Perlin + Worley noise for coastlines.
+- [ ] Experiment with hydraulic erosion step to carve rivers.
+- [ ] Optionally import DEM height-maps for real-world topology.
+
 ## Current Goal
+Implement legend overlay + basic zoom/pan + responsive scale bar as foundation for later tasks.
 Add proportional road indicators and scale bar overlay
 
 Next steps:
@@ -64,15 +115,10 @@ Next steps:
 - [x] Prevent overlap of squares with models
   - [x] Update model placement logic to check topography grid
   - [x] Ensure no city elements overlap water
-- [ ] Add proportional visual indicators for roads
-  - [ ] Design road rendering logic (polylines/curves, not just grid)
-  - [ ] Draw roads proportional to their type/width
-- [ ] Add a scale indicator to the canvas
-  - [ ] Design scale bar overlay (like Google Maps)
-  - [ ] Make scale respond to zoom/scale changes
+- [x] Add proportional visual indicators for roads
+  
+
 - [x] Update color scheme to a dark mode
   - [x] Redesign CSS for dark theme
   - [x] (Optional) Add dark/light mode toggle
-- [ ] Improve slider UX for smooth adjustment
-  - [ ] Ensure all sliders are smoothly draggable (not just clickable)
-  - [ ] Update input types or JS as needed
+

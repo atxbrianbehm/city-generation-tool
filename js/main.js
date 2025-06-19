@@ -83,6 +83,35 @@ class CityGenerationTool {
             });
         });
 
+        // Canvas pan & zoom
+        this.isPanning = false;
+        let lastX = 0, lastY = 0;
+        this.canvas.addEventListener('wheel', (e) => {
+            if (!e.ctrlKey && !e.metaKey) return; // require modifier to avoid page zoom
+            e.preventDefault();
+            const factor = e.deltaY < 0 ? 1.1 : 0.9;
+            this.renderer.zoomAt(e.offsetX, e.offsetY, factor);
+            this.renderer.render(this.currentCity);
+        }, { passive: false });
+
+        this.canvas.addEventListener('pointerdown', (e) => {
+            if (e.button !== 0) return;
+            this.isPanning = true;
+            lastX = e.clientX;
+            lastY = e.clientY;
+            this.canvas.setPointerCapture(e.pointerId);
+        });
+        this.canvas.addEventListener('pointermove', (e) => {
+            if (!this.isPanning) return;
+            const dx = e.clientX - lastX;
+            const dy = e.clientY - lastY;
+            lastX = e.clientX;
+            lastY = e.clientY;
+            this.renderer.pan(dx, dy);
+            this.renderer.render(this.currentCity);
+        });
+        this.canvas.addEventListener('pointerup', () => { this.isPanning = false; });
+
         // Topography controls
         const waterSlider = document.getElementById('water-coverage');
         const waterVal = document.getElementById('water-coverage-val');

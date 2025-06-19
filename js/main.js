@@ -1,0 +1,393 @@
+/**
+ * City Generation Tool - Main Application
+ * Manages UI controls, algorithm coordination, and real-time updates
+ */
+
+class CityGenerationTool {
+    constructor() {
+        this.canvas = document.getElementById('city-canvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.algorithms = {};
+        this.renderer = new CityRenderer(this.canvas);
+        this.currentCity = null;
+        this.isGenerating = false;
+        
+        this.initializeAlgorithms();
+        this.setupEventListeners();
+        this.updateCanvasSize();
+        this.generateInitialCity();
+    }
+
+    initializeAlgorithms() {
+        this.algorithms = {
+            gridLayout: new GridLayoutAlgorithm(),
+            poissonDisk: new PoissonDiskAlgorithm(),
+            randomWalk: new RandomWalkAlgorithm(),
+            cellularAutomata: new CellularAutomataAlgorithm(),
+            voronoi: new VoronoiAlgorithm(),
+            wfc: new WFCAlgorithm()
+        };
+    }
+
+    setupEventListeners() {
+        // Algorithm checkboxes and weight sliders
+        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', (e) => {
+                const algorithmName = e.target.id.replace('-', '');
+                const weightSlider = document.getElementById(algorithmName.replace(/([A-Z])/g, '-$1').toLowerCase() + '-weight');
+                if (weightSlider) {
+                    weightSlider.disabled = !e.target.checked;
+                    if (!e.target.checked) {
+                        weightSlider.value = 0;
+                        this.updateWeightDisplay(weightSlider);
+                    }
+                }
+                this.normalizeWeights();
+                this.generateCity();
+            });
+        });
+
+        // Weight sliders
+        document.querySelectorAll('.blend-slider').forEach(slider => {
+            slider.addEventListener('input', (e) => {
+                this.updateWeightDisplay(e.target);
+                this.normalizeWeights();
+                this.generateCity();
+            });
+        });
+
+        // Parameter controls
+        document.querySelectorAll('.algorithm-params input').forEach(input => {
+            input.addEventListener('input', () => {
+                this.generateCity();
+            });
+        });
+
+        // Global controls
+        document.querySelectorAll('.global-controls input').forEach(input => {
+            input.addEventListener('input', () => {
+                this.generateCity();
+            });
+        });
+
+        // Action buttons
+        document.getElementById('generate-btn').addEventListener('click', () => {
+            this.generateCity();
+        });
+
+        document.getElementById('randomize-btn').addEventListener('click', () => {
+            this.randomizeParameters();
+        });
+
+        document.getElementById('export-btn').addEventListener('click', () => {
+            this.exportCity();
+        });
+
+        // Canvas resize handling
+        window.addEventListener('resize', () => {
+            this.updateCanvasSize();
+            if (this.currentCity) {
+                this.renderer.render(this.currentCity);
+            }
+        });
+    }
+
+    updateWeightDisplay(slider) {
+        const valueElement = slider.nextElementSibling;
+        if (valueElement && valueElement.classList.contains('weight-value')) {
+            valueElement.textContent = `${slider.value}%`;
+        }
+    }
+
+    normalizeWeights() {
+        const sliders = document.querySelectorAll('.blend-slider');
+        const activeSliders = Array.from(sliders).filter(slider => 
+            !slider.disabled && parseInt(slider.value) > 0
+        );
+
+        if (activeSliders.length === 0) return;
+
+        const totalWeight = activeSliders.reduce((sum, slider) => sum + parseInt(slider.value), 0);
+        
+        if (totalWeight > 100) {
+            const scale = 100 / totalWeight;
+            activeSliders.forEach(slider => {
+                slider.value = Math.max(1, Math.round(parseInt(slider.value) * scale));
+                this.updateWeightDisplay(slider);
+            });
+        }
+    }
+
+    getActiveAlgorithms() {
+        const active = [];
+        
+        document.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+            const algorithmKey = this.getAlgorithmKey(checkbox.id);
+            const weightSlider = document.getElementById(checkbox.id.replace(/([A-Z])/g, '-$1').toLowerCase().replace(/^-/, '') + '-weight');
+            const weight = parseInt(weightSlider.value) / 100;
+            
+            if (weight > 0 && this.algorithms[algorithmKey]) {
+                active.push({
+                    name: algorithmKey,
+                    algorithm: this.algorithms[algorithmKey],
+                    weight: weight,
+                    params: this.getAlgorithmParams(algorithmKey)
+                });
+            }
+        });
+
+        return active;
+    }
+
+    getAlgorithmKey(checkboxId) {
+        const keyMap = {
+            'grid-layout': 'gridLayout',
+            'poisson-disk': 'poissonDisk',
+            'random-walk': 'randomWalk',
+            'cellular-automata': 'cellularAutomata',
+            'voronoi': 'voronoi',
+            'wfc': 'wfc'
+        };
+        return keyMap[checkboxId] || checkboxId;
+    }
+
+    getAlgorithmParams(algorithmKey) {
+        const paramMap = {
+            gridLayout: {
+                gridSize: document.getElementById('grid-size')?.value || 20,
+                streetWidth: document.getElementById('street-width')?.value || 2,
+                density: document.getElementById('grid-density')?.value || 0.7
+            },
+            poissonDisk: {
+                minDistance: document.getElementById('poisson-distance')?.value || 30,
+                maxAttempts: document.getElementById('poisson-attempts')?.value || 30
+            },
+            randomWalk: {
+                walkerCount: document.getElementById('walker-count')?.value || 5,
+                steps: document.getElementById('walker-steps')?.value || 200,
+                depositChance: document.getElementById('deposit-chance')?.value || 0.3
+            },
+            cellularAutomata: {
+                generations: document.getElementById('cellular-generations')?.value || 5,
+                neighborThreshold: document.getElementById('neighbor-threshold')?.value || 4
+            },
+            voronoi: {
+                seedPoints: document.getElementById('voronoi-seeds')?.value || 25,
+                buildingsPerCell: document.getElementById('buildings-per-cell')?.value || 5
+            },
+            wfc: {
+                tileSize: document.getElementById('tile-size')?.value || 10,
+                entropyThreshold: document.getElementById('entropy-threshold')?.value || 3
+            }
+        };
+
+        return paramMap[algorithmKey] || {};
+    }
+
+    getGlobalParams() {
+        return {
+            scale: parseFloat(document.getElementById('global-scale')?.value || 1),
+            randomness: parseFloat(document.getElementById('global-randomness')?.value || 0.5),
+            seed: parseInt(document.getElementById('global-seed')?.value || 12345),
+            canvasWidth: this.canvas.width,
+            canvasHeight: this.canvas.height
+        };
+    }
+
+    async generateCity() {
+        if (this.isGenerating) return;
+        
+        this.isGenerating = true;
+        const startTime = performance.now();
+        
+        try {
+            const activeAlgorithms = this.getActiveAlgorithms();
+            const globalParams = this.getGlobalParams();
+            
+            if (activeAlgorithms.length === 0) {
+                this.currentCity = { buildings: [], roads: [], parks: [], water: [] };
+            } else {
+                this.currentCity = await this.blendAlgorithms(activeAlgorithms, globalParams);
+            }
+            
+            this.renderer.render(this.currentCity);
+            
+            const endTime = performance.now();
+            this.updateStats(this.currentCity, endTime - startTime);
+            
+        } catch (error) {
+            console.error('Error generating city:', error);
+        } finally {
+            this.isGenerating = false;
+        }
+    }
+
+    async blendAlgorithms(activeAlgorithms, globalParams) {
+        const results = [];
+        
+        // Generate results from each active algorithm
+        for (const algorithmConfig of activeAlgorithms) {
+            const result = await algorithmConfig.algorithm.generate({
+                ...algorithmConfig.params,
+                ...globalParams
+            });
+            
+            results.push({
+                ...result,
+                weight: algorithmConfig.weight
+            });
+        }
+        
+        // Blend the results
+        return this.blendResults(results, globalParams);
+    }
+
+    blendResults(results, globalParams) {
+        const blended = {
+            buildings: [],
+            roads: [],
+            parks: [],
+            water: []
+        };
+        
+        results.forEach(result => {
+            // Scale each result by its weight and add to blended output
+            Object.keys(blended).forEach(key => {
+                if (result[key]) {
+                    const scaledFeatures = result[key].map(feature => ({
+                        ...feature,
+                        opacity: (feature.opacity || 1) * result.weight
+                    }));
+                    blended[key].push(...scaledFeatures);
+                }
+            });
+        });
+        
+        // Apply global randomness and cleanup
+        this.applyGlobalEffects(blended, globalParams);
+        
+        return blended;
+    }
+
+    applyGlobalEffects(city, globalParams) {
+        const { randomness, seed } = globalParams;
+        
+        // Seed random number generator for consistent results
+        Math.seedrandom(seed);
+        
+        // Apply randomness to positions and properties
+        Object.keys(city).forEach(key => {
+            city[key].forEach(feature => {
+                if (randomness > 0) {
+                    feature.x += (Math.random() - 0.5) * randomness * 20;
+                    feature.y += (Math.random() - 0.5) * randomness * 20;
+                }
+            });
+        });
+    }
+
+    randomizeParameters() {
+        // Randomize algorithm weights
+        const sliders = document.querySelectorAll('.blend-slider');
+        const activeCount = Math.floor(Math.random() * 3) + 1; // 1-3 active algorithms
+        
+        sliders.forEach((slider, index) => {
+            const checkbox = slider.parentElement.querySelector('input[type="checkbox"]');
+            if (index < activeCount) {
+                checkbox.checked = true;
+                slider.disabled = false;
+                slider.value = Math.floor(Math.random() * 80) + 20; // 20-100%
+            } else {
+                checkbox.checked = false;
+                slider.disabled = true;
+                slider.value = 0;
+            }
+            this.updateWeightDisplay(slider);
+        });
+        
+        // Randomize parameters
+        document.querySelectorAll('.algorithm-params input').forEach(input => {
+            const min = parseFloat(input.min);
+            const max = parseFloat(input.max);
+            const step = parseFloat(input.step) || 1;
+            const range = max - min;
+            const value = min + Math.floor(Math.random() * (range / step)) * step;
+            input.value = value;
+        });
+        
+        // Randomize global seed
+        document.getElementById('global-seed').value = Math.floor(Math.random() * 100000);
+        
+        this.normalizeWeights();
+        this.generateCity();
+    }
+
+    exportCity() {
+        if (!this.currentCity) return;
+        
+        const exportData = {
+            timestamp: new Date().toISOString(),
+            city: this.currentCity,
+            parameters: {
+                algorithms: this.getActiveAlgorithms(),
+                global: this.getGlobalParams()
+            }
+        };
+        
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `city-${Date.now()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    updateStats(city, generationTime) {
+        const buildingCount = city.buildings?.length || 0;
+        const roadCount = city.roads?.length || 0;
+        const statsElement = document.getElementById('generation-stats');
+        
+        if (statsElement) {
+            statsElement.innerHTML = `
+                <span>Buildings: ${buildingCount}</span>
+                <span>Roads: ${roadCount}</span>
+                <span>Time: ${Math.round(generationTime)}ms</span>
+            `;
+        }
+    }
+
+    updateCanvasSize() {
+        const container = this.canvas.parentElement;
+        const containerRect = container.getBoundingClientRect();
+        const maxWidth = containerRect.width - 32; // Account for padding
+        const maxHeight = window.innerHeight - 300; // Leave space for controls
+        
+        this.canvas.width = Math.min(800, maxWidth);
+        this.canvas.height = Math.min(600, maxHeight);
+        this.canvas.style.width = this.canvas.width + 'px';
+        this.canvas.style.height = this.canvas.height + 'px';
+    }
+
+    generateInitialCity() {
+        // Generate an initial city with grid layout
+        document.getElementById('grid-layout').checked = true;
+        this.generateCity();
+    }
+}
+
+// Utility function for seeded random numbers
+Math.seedrandom = function(seed) {
+    Math._seed = seed % 2147483647;
+    if (Math._seed <= 0) Math._seed += 2147483646;
+};
+
+Math.seededRandom = function() {
+    Math._seed = Math._seed * 16807 % 2147483647;
+    return (Math._seed - 1) / 2147483646;
+};
+
+// Initialize the application when the DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    window.cityTool = new CityGenerationTool();
+});

@@ -157,12 +157,8 @@
                         <button id="export-btn" class="secondary-btn">Export</button>
                     </div>
                 </div>
-            </aside>
 
-            <!-- Canvas Area -->
-            <main class="canvas-area">
-                <canvas id="city-canvas" width="800" height="600"></canvas>
-                <div id="legend-overlay" class="legend-overlay">
+                <div id="legend-panel" class="legend-panel">
                     <h4>Legend</h4>
                     <div class="legend-item"><span class="swatch residential"></span> Residential</div>
                     <div class="legend-item"><span class="swatch commercial"></span> Commercial</div>
@@ -171,6 +167,12 @@
                     <div class="legend-item"><span class="swatch parks"></span> Parks</div>
                     <div class="legend-item"><span class="swatch water"></span> Water</div>
                 </div>
+            </aside>
+
+            <!-- Canvas Area -->
+            <main class="canvas-area">
+                <canvas id="city-canvas" width="800" height="600"></canvas>
+
                 <div class="canvas-info">
                     <div class="stats-panel">
                         <h4>Generation Stats</h4>

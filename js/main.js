@@ -17,7 +17,8 @@ class CityGenerationTool {
         this.initializeAlgorithms();
         this.setupEventListeners();
         this.updateCanvasSize();
-        this.generateInitialCity();
+        // Initial topography preview only; city generation awaits user action
+        this.generateTopography(true);
     }
 
     initializeAlgorithms() {

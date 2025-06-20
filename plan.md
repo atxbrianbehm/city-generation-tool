@@ -89,9 +89,9 @@
 - [ ] Draw cul-de-sac cap for dead ends.
 
 ### 8. Advanced water generation (research)
-- [ ] Evaluate combining FBM Perlin + Worley noise for coastline generation.
-- [ ] Generate water mask from elevation grid via thresholding and connectivity (lakes, rivers, bays).
-- [ ] Apply smoothing (Marching Squares) to convert grid mask into natural polygonal coastlines.
+- [x] Evaluate combining FBM Perlin + Worley noise for coastline generation.
+- [x] Generate water mask from elevation grid via thresholding and connectivity (lakes, rivers, bays).
+- [x] Apply smoothing (Marching Squares) to convert grid mask into natural polygonal coastlines.
 - [ ] Experiment with hydraulic erosion or flow-routing to carve river networks and drainage basins.
 - [ ] Use flood-fill/traversal on elevation to define river branching and ensure connected water bodies.
 - [ ] Optionally import DEM height-maps for real-world topography.

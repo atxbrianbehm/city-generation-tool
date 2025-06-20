@@ -46,6 +46,24 @@ class TopographyGenerator {
         return lerp(nx0, nx1, dy);
     }
 
+    /**
+     * Build a regular elevation grid (noise values) over the area.
+     * @returns {{ rows: number, cols: number, data: number[][] }}
+     */
+    generateElevationGrid() {
+        const cols = Math.ceil(this.width / this.cellSize) + 1;
+        const rows = Math.ceil(this.height / this.cellSize) + 1;
+        const data = Array.from({ length: rows }, (_, j) =>
+            Array.from({ length: cols }, (_, i) => {
+                const x = i * this.cellSize;
+                const y = j * this.cellSize;
+                return this.noise(x, y);
+            })
+        );
+        this.elevationGrid = { rows, cols, data };
+        return this.elevationGrid;
+    }
+
     generate() {
         const waterCells = [];
         
@@ -60,12 +78,15 @@ class TopographyGenerator {
     }
 
     generateLake() {
-        const waterCells = [];
+        // Build elevation mask and threshold to generate lake footprint
         const { waterCoverage } = this.params;
-        for (let y = 0; y < this.height; y += this.cellSize) {
-            for (let x = 0; x < this.width; x += this.cellSize) {
-                const n = this.noise(x, y);
-                if (n < waterCoverage) {
+        const { rows, cols, data } = this.generateElevationGrid();
+        const waterCells = [];
+        for (let j = 0; j < rows; j++) {
+            for (let i = 0; i < cols; i++) {
+                if (data[j][i] < waterCoverage) {
+                    const x = i * this.cellSize;
+                    const y = j * this.cellSize;
                     waterCells.push({ x, y, width: this.cellSize, height: this.cellSize });
                 }
             }
@@ -106,20 +127,19 @@ class TopographyGenerator {
     }
 
     generateBay() {
+        // Bay generation via elevation threshold + distance falloff
         const waterCells = [];
         const { waterCoverage, bayDirection } = this.params;
-        
-        for (let y = 0; y < this.height; y += this.cellSize) {
-            for (let x = 0; x < this.width; x += this.cellSize) {
+        const { rows, cols, data } = this.generateElevationGrid();
+        const maxDistance = Math.max(this.width, this.height);
+        for (let j = 0; j < rows; j++) {
+            for (let i = 0; i < cols; i++) {
+                const x = i * this.cellSize;
+                const y = j * this.cellSize;
                 let threshold = waterCoverage;
-                
-                // Modify threshold based on distance from bay edge
-                const edgeDistance = this.getDistanceFromBayEdge(x, y, bayDirection);
-                const maxDistance = Math.max(this.width, this.height);
-                threshold += (1 - edgeDistance / maxDistance) * 0.4; // Boost near bay edge
-                
-                const n = this.noise(x, y);
-                if (n < threshold) {
+                const edgeDist = this.getDistanceFromBayEdge(x, y, bayDirection);
+                threshold += (1 - edgeDist / maxDistance) * 0.4;
+                if (data[j][i] < threshold) {
                     waterCells.push({ x, y, width: this.cellSize, height: this.cellSize });
                 }
             }
@@ -168,6 +188,16 @@ class TopographyGenerator {
             case 'right': return this.width - x;
             default: return Math.min(x, y, this.width - x, this.height - y);
         }
+    }
+
+    /**
+     * Placeholder: extract smooth coastline polygons from elevation grid via Marching Squares.
+     * @returns {Array<Array<{x:number,y:number}>>} list of polygon vertex arrays
+     */
+    extractCoastlines() {
+        if (!this.elevationGrid) this.generateElevationGrid();
+        // TODO: implement Marching Squares to trace contour at waterCoverage threshold
+        return [];
     }
 }
 

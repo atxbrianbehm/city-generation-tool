@@ -101,7 +101,7 @@ Implement legend overlay + basic zoom/pan + responsive scale bar as foundation f
 Add proportional road indicators and scale bar overlay
 
 Next steps:
-- Test all algorithm combinations and parameter ranges
+- Test water/shoreline rendering in full city generation pipeline
 - Optimize performance for larger canvas sizes
 - Add more visual polish and effects
 - Consider additional export formats (PNG, SVG, JSON)

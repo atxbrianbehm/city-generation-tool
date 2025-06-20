@@ -478,7 +478,10 @@ class CityGenerationTool {
 
     blendResults(results, globalParams) {
         const blended = {
-            water: this.waterCells || [],
+            // Use smooth coastline polygons if available, otherwise fall back to waterCells squares
+            water: (this.coastPolygons && this.coastPolygons.length)
+                ? this.coastPolygons
+                : (this.waterCells || []),
             buildings: [],
             roads: [],
             parks: []

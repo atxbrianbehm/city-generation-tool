@@ -191,13 +191,87 @@ class TopographyGenerator {
     }
 
     /**
-     * Placeholder: extract smooth coastline polygons from elevation grid via Marching Squares.
-     * @returns {Array<Array<{x:number,y:number}>>} list of polygon vertex arrays
+     * Extract coastline contours from the elevation grid via Marching Squares.
+     * Returns an array of polygon loops in pixel coordinates.
+     * @returns {Array<Array<{x:number,y:number}>>}
      */
     extractCoastlines() {
         if (!this.elevationGrid) this.generateElevationGrid();
-        // TODO: implement Marching Squares to trace contour at waterCoverage threshold
-        return [];
+        const { rows, cols, data } = this.elevationGrid;
+        const threshold = this.params.waterCoverage;
+        const cell = this.cellSize;
+
+        // Helper to key points for linking segments
+        const key = p => `${p.x.toFixed(3)},${p.y.toFixed(3)}`;
+
+        // Collect segments
+        const segments = [];
+        for (let j = 0; j < rows - 1; j++) {
+            for (let i = 0; i < cols - 1; i++) {
+                const a = data[j][i] < threshold ? 1 : 0;
+                const b = data[j][i+1] < threshold ? 1 : 0;
+                const c = data[j+1][i+1] < threshold ? 1 : 0;
+                const d = data[j+1][i] < threshold ? 1 : 0;
+                const idx = (a<<3)|(b<<2)|(c<<1)|d;
+                if (idx === 0 || idx === 15) continue;
+                // mid-edge points
+                const top    = { x: i*cell + cell/2, y: j*cell };
+                const right  = { x: i*cell + cell,   y: j*cell + cell/2 };
+                const bottom = { x: i*cell + cell/2, y: j*cell + cell };
+                const left   = { x: i*cell,           y: j*cell + cell/2 };
+                switch(idx) {
+                    case 1:  segments.push([left,  bottom]); break;
+                    case 2:  segments.push([bottom,right]); break;
+                    case 3:  segments.push([left,  right]); break;
+                    case 4:  segments.push([top,   right]); break;
+                    case 5:  segments.push([top,   left], [bottom,right]); break;
+                    case 6:  segments.push([top,   bottom]); break;
+                    case 7:  segments.push([top,   left]); break;
+                    case 8:  segments.push([top,   left]); break;
+                    case 9:  segments.push([top,   bottom]); break;
+                    case 10: segments.push([top,   right], [left,bottom]); break;
+                    case 11: segments.push([top,   right]); break;
+                    case 12: segments.push([left,  right]); break;
+                    case 13: segments.push([bottom,right]); break;
+                    case 14: segments.push([left,  bottom]); break;
+                }
+            }
+        }
+
+        // Link segments into loops
+        const segMap = new Map();
+        segments.forEach(([p1,p2]) => {
+            for (const pt of [p1,p2]) {
+                const k = key(pt);
+                (segMap.get(k) || segMap.set(k,[]).get(k)).push([p1,p2]);
+            }
+        });
+        const loops = [];
+        const used = new Set();
+        for (const seg of segments) {
+            const segKey = `${key(seg[0])}|${key(seg[1])}`;
+            if (used.has(segKey)) continue;
+            const loop = [ seg[0], seg[1] ];
+            used.add(segKey);
+            let current = seg[1];
+            while (true) {
+                const k = key(current);
+                const nextSegs = (segMap.get(k) || []).filter(s => {
+                    const sKey = `${key(s[0])}|${key(s[1])}`;
+                    return !used.has(sKey);
+                });
+                if (!nextSegs.length) break;
+                const nextSeg = nextSegs[0];
+                const [p1,p2] = nextSeg;
+                const nxt = (key(p1) === key(current) ? p2 : p1);
+                loop.push(nxt);
+                used.add(`${key(p1)}|${key(p2)}`);
+                current = nxt;
+                if (key(current) === key(loop[0])) break;
+            }
+            if (loop.length > 2) loops.push(loop);
+        }
+        return loops;
     }
 }
 

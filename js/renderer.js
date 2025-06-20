@@ -268,9 +268,24 @@ class CityRenderer {
     }
 
     drawWater(waterFeatures) {
-        waterFeatures.forEach(water => {
-            this.drawWaterFeature(water);
-        });
+        if (waterFeatures.length > 0 && Array.isArray(waterFeatures[0])) {
+            // Polygonal coastlines
+            this.ctx.save();
+            this.ctx.fillStyle = this.colors.water;
+            waterFeatures.forEach(loop => {
+                this.ctx.beginPath();
+                loop.forEach((pt, i) => {
+                    this.ctx[i === 0 ? 'moveTo' : 'lineTo'](pt.x, pt.y);
+                });
+                this.ctx.closePath();
+                this.ctx.fill();
+            });
+            this.ctx.restore();
+        } else {
+            waterFeatures.forEach(water => {
+                this.drawWaterFeature(water);
+            });
+        }
     }
 
     drawWaterFeature(water) {

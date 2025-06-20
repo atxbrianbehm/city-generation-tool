@@ -412,9 +412,10 @@ class CityGenerationTool {
             bayDirection
         });
         this.waterCells = topoGen.generate();
-        // If requested, render only the topography so the user can preview it
+        this.coastPolygons = topoGen.extractCoastlines();
+        // If requested, render only the topography so the user can preview the smooth coastlines
         if (preview) {
-            this.renderer.render({ buildings: [], roads: [], parks: [], water: this.waterCells });
+            this.renderer.render({ buildings: [], roads: [], parks: [], water: this.coastPolygons });
         }
     }
 

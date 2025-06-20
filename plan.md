@@ -46,23 +46,23 @@
 ## Detailed Upcoming Tasks (Q3 2025)
 
 ### 1. Move legend outside canvas
-- [ ] Remove `drawLegend()` from renderer.
-- [ ] Create reusable Legend `<div>` with flex layout and color swatches.
-- [ ] Style with CSS variables for dark/light themes.
-- [ ] Position top-left via absolute positioning; retain drag-ability (optional).
+- [x] Remove `drawLegend()` from renderer.
+- [x] Create reusable Legend `<div>` with flex layout and color swatches.
+- [x] Style with CSS variables for dark/light themes.
+- [x] Position legend panel in sidebar under global controls.
 
 ### 2. Zoom & Pan interactions
 - [x] Add `zoom` and `offset` state to `CityRenderer`.
-- [ ] Implement mouse wheel zoom that always centers on the pointer position (requires transforming offsets before scaling).
-- [ ] Implement pointer drag (mouse left / touch one-finger) to pan; update offsets.
-- [ ] Implement pinch-zoom and two-finger pan on touch devices.
-- [ ] Debounce redraws for performance; throttle to animation frame.
+- [x] Implement mouse wheel zoom that always centers on the pointer position (requires transforming offsets before scaling).
+- [x] Implement pointer drag (mouse left / touch one-finger) to pan; update offsets.
+- [x] Implement pinch-zoom and two-finger pan on touch devices.
+- [x] Debounce redraws for performance; throttle to animation frame.
 - [ ] Ensure all drawing helpers respect `zoom` & `offset`.
 
 ### 3. Dynamic scale bar
-- [ ] Compute real-world metres per pixel from `zoom`.
-- [ ] Choose ‘nice’ scale length (e.g. 50 m, 100 m, 250 m) based on rule of 2-5 cm on screen.
-- [ ] Update scale bar overlay text & width after zoom.
+- [x] Compute real-world metres per pixel from `zoom`.
+- [x] Choose ‘nice’ scale length (e.g. 50 m, 100 m, 250 m) based on rule of 2-5 cm on screen.
+- [x] Update scale bar overlay text & width after zoom.
 
 ### 4. Slider UX + auto-enable
 - [ ] Replace current range inputs with native sliders (keep) but attach `pointerdown/move` listeners for smooth drag in all browsers.

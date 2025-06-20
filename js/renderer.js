@@ -31,10 +31,11 @@ class CityRenderer {
         this.clearCanvas();
         this.drawBackground();
         
-        // Apply pan & zoom transform
+        // Apply pan & zoom transform (scale first, then translate). Translation
+        // offsets are in screen pixels, unaffected by zoom level.
         this.ctx.save();
-        this.ctx.translate(this.offsetX, this.offsetY);
         this.ctx.scale(this.scale, this.scale);
+        this.ctx.translate(this.offsetX, this.offsetY);
 
         // Render in layers for proper z-ordering
         this.drawWater(city.water || []);
@@ -315,16 +316,21 @@ class CityRenderer {
     }
 
     pan(dx, dy) {
+        // Offsets are stored in screen pixels (translation applied after scale),
+        // so we simply add the raw pointer delta.
         this.offsetX += dx;
         this.offsetY += dy;
     }
 
     zoomAt(screenX, screenY, factor) {
-        // Convert screen → world before zoom
+        // Convert screen → world for scale-then-translate model.
         const worldX = (screenX - this.offsetX) / this.scale;
         const worldY = (screenY - this.offsetY) / this.scale;
+
+        // Clamp scale
         this.scale = Math.max(0.25, Math.min(4, this.scale * factor));
-        // Recompute offset so the zoom happens about the cursor
+
+        // Recompute offset so the zoom happens about the cursor (keeps anchor)
         this.offsetX = screenX - worldX * this.scale;
         this.offsetY = screenY - worldY * this.scale;
     }
@@ -359,56 +365,6 @@ class CityRenderer {
         this.ctx.fillText(`${barMetres} m`, x + barWidth / 2, y + barHeight + 4);
     }
 
-    drawLegend() {
-        const legendX = 10;
-        const legendY = 10;
-        const legendWidth = 200;
-        const legendHeight = 200;
-        
-        this.ctx.fillStyle = 'rgba(40, 40, 50, 0.9)';
-        this.ctx.fillRect(legendX, legendY, legendWidth, legendHeight);
-        
-        this.ctx.strokeStyle = '#555';
-        this.ctx.lineWidth = 1;
-        this.ctx.strokeRect(legendX, legendY, legendWidth, legendHeight);
-        
-        this.ctx.font = '14px Arial';
-        this.ctx.fillStyle = '#e0e0e0';
-        this.ctx.textAlign = 'left';
-        this.ctx.textBaseline = 'top';
-        
-        this.ctx.fillText('Legend:', legendX + 10, legendY + 10);
-        
-        this.ctx.fillStyle = this.colors.buildings.residential;
-        this.ctx.fillRect(legendX + 10, legendY + 30, 20, 20);
-        this.ctx.fillStyle = '#e0e0e0';
-        this.ctx.fillText('Residential', legendX + 40, legendY + 30);
-        
-        this.ctx.fillStyle = this.colors.buildings.commercial;
-        this.ctx.fillRect(legendX + 10, legendY + 60, 20, 20);
-        this.ctx.fillStyle = '#e0e0e0';
-        this.ctx.fillText('Commercial', legendX + 40, legendY + 60);
-        
-        this.ctx.fillStyle = this.colors.buildings.industrial;
-        this.ctx.fillRect(legendX + 10, legendY + 90, 20, 20);
-        this.ctx.fillStyle = '#e0e0e0';
-        this.ctx.fillText('Industrial', legendX + 40, legendY + 90);
-        
-        this.ctx.fillStyle = this.colors.roads;
-        this.ctx.fillRect(legendX + 10, legendY + 120, 20, 20);
-        this.ctx.fillStyle = '#e0e0e0';
-        this.ctx.fillText('Roads', legendX + 40, legendY + 120);
-        
-        this.ctx.fillStyle = this.colors.parks;
-        this.ctx.fillRect(legendX + 10, legendY + 150, 20, 20);
-        this.ctx.fillStyle = '#e0e0e0';
-        this.ctx.fillText('Parks', legendX + 40, legendY + 150);
-        
-        this.ctx.fillStyle = this.colors.water;
-        this.ctx.fillRect(legendX + 10, legendY + 180, 20, 20);
-        this.ctx.fillStyle = '#e0e0e0';
-        this.ctx.fillText('Water', legendX + 40, legendY + 180);
-    }
 
     // Utility functions for color manipulation
     darkenColor(color, factor) {

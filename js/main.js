@@ -231,6 +231,7 @@ class CityGenerationTool {
         const waterVal = document.getElementById('water-coverage-val');
         waterSlider.addEventListener('input', (e) => {
             waterVal.textContent = `${e.target.value}%`;
+            this.generateTopography(true);
         });
         
         const topoMode = document.getElementById('topo-mode');
@@ -243,13 +244,19 @@ class CityGenerationTool {
             const mode = e.target.value;
             riverWidthContainer.style.display = mode === 'river' ? 'block' : 'none';
             bayDirectionContainer.style.display = mode === 'bay' ? 'block' : 'none';
+            this.generateTopography(true);
         });
         
         riverWidthSlider.addEventListener('input', (e) => {
             riverWidthVal.textContent = e.target.value;
+            this.generateTopography(true);
         });
         
         document.getElementById('generate-topo-btn').addEventListener('click', () => {
+            this.generateTopography(true);
+        });
+        // Bay direction change
+        document.getElementById('bay-direction').addEventListener('change', () => {
             this.generateTopography(true);
         });
 

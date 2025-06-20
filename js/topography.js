@@ -64,6 +64,40 @@ class TopographyGenerator {
         return this.elevationGrid;
     }
 
+    /**
+     * Compute flow directions for each grid cell based on lowest adjacent elevation.
+     * Populates this.flowDirGrid with [row,col] or null.
+     * @returns {Array<Array<[number,number]>>}
+     */
+    computeFlowDirections() {
+        if (!this.elevationGrid) this.generateElevationGrid();
+        const { rows, cols, data } = this.elevationGrid;
+        const flow = Array.from({ length: rows }, () => Array(cols).fill(null));
+        for (let j = 0; j < rows; j++) {
+            for (let i = 0; i < cols; i++) {
+                let minH = data[j][i];
+                let next = null;
+                // Check 8 neighbors
+                for (let dj = -1; dj <= 1; dj++) {
+                    for (let di = -1; di <= 1; di++) {
+                        if (!di && !dj) continue;
+                        const nj = j + dj, ni = i + di;
+                        if (nj >= 0 && nj < rows && ni >= 0 && ni < cols) {
+                            const h = data[nj][ni];
+                            if (h < minH) {
+                                minH = h;
+                                next = [nj, ni];
+                            }
+                        }
+                    }
+                }
+                flow[j][i] = next;
+            }
+        }
+        this.flowDirGrid = flow;
+        return flow;
+    }
+
     generate() {
         const waterCells = [];
         
@@ -95,25 +129,30 @@ class TopographyGenerator {
     }
 
     generateRiver() {
-        const waterCells = [];
+        // Flow-routing based river path following elevation gradient
         const { riverWidth } = this.params;
-        
-        // Pick random start and end points on opposite edges
-        const startSide = Math.floor(this.hash(100, 200) * 4);
-        const endSide = (startSide + 2) % 4; // Opposite side
-        
-        const start = this.getEdgePoint(startSide);
-        const end = this.getEdgePoint(endSide);
-        
-        // Trace path with some meandering
-        const path = this.tracePath(start, end);
-        
-        // Create water cells along path
-        path.forEach(point => {
+        // Ensure we have elevation grid
+        if (!this.elevationGrid) this.generateElevationGrid();
+        const { rows, cols } = this.elevationGrid;
+        // Compute flow directions
+        const flowDir = this.computeFlowDirections();
+        // Pick random start on top edge where flow exists
+        const candidates = [];
+        for (let i = 0; i < cols; i++) {
+            if (flowDir[0][i]) candidates.push([0, i]);
+        }
+        const start = candidates.length > 0
+            ? candidates[Math.floor(this.hash(0, 1) * candidates.length)]
+            : [0, Math.floor(this.hash(0,1) * cols)];
+        // Trace downstream path
+        const path = this.getFlowPath(start[0], start[1]);
+        // Carve river width around path
+        const waterCells = [];
+        path.forEach(pt => {
             for (let dx = -riverWidth; dx <= riverWidth; dx++) {
                 for (let dy = -riverWidth; dy <= riverWidth; dy++) {
-                    const x = Math.floor((point.x + dx) / this.cellSize) * this.cellSize;
-                    const y = Math.floor((point.y + dy) / this.cellSize) * this.cellSize;
+                    const x = Math.floor((pt.x + dx) / this.cellSize) * this.cellSize;
+                    const y = Math.floor((pt.y + dy) / this.cellSize) * this.cellSize;
                     if (x >= 0 && x < this.width && y >= 0 && y < this.height) {
                         if (!waterCells.some(w => w.x === x && w.y === y)) {
                             waterCells.push({ x, y, width: this.cellSize, height: this.cellSize });
@@ -122,7 +161,6 @@ class TopographyGenerator {
                 }
             }
         });
-        
         return waterCells;
     }
 
@@ -157,26 +195,20 @@ class TopographyGenerator {
         }
     }
 
-    tracePath(start, end) {
+    /**
+     * Trace flow path from a grid cell following flow directions.
+     * @param {number} row Starting row index
+     * @param {number} col Starting column index
+     * @returns {Array<{x:number,y:number}>} pixel coordinates along the path
+     */
+    getFlowPath(row, col) {
         const path = [];
-        const steps = Math.max(Math.abs(end.x - start.x), Math.abs(end.y - start.y)) / 10;
-        
-        for (let i = 0; i <= steps; i++) {
-            const t = i / steps;
-            const x = start.x + (end.x - start.x) * t;
-            const y = start.y + (end.y - start.y) * t;
-            
-            // Add some noise for meandering
-            const meander = this.noise(x * 0.01, y * 0.01) * 40 - 20;
-            const perpX = -(end.y - start.y) / steps;
-            const perpY = (end.x - start.x) / steps;
-            
-            path.push({
-                x: x + perpX * meander,
-                y: y + perpY * meander
-            });
+        let current = [row, col];
+        while (current) {
+            const [j, i] = current;
+            path.push({ x: i * this.cellSize, y: j * this.cellSize });
+            current = this.flowDirGrid[j][i];
         }
-        
         return path;
     }
 
@@ -191,30 +223,84 @@ class TopographyGenerator {
     }
 
     /**
-     * Extract coastline contours from the elevation grid via Marching Squares.
-     * Returns an array of polygon loops in pixel coordinates.
-     * @returns {Array<Array<{x:number,y:number}>>}
+     * Extract coastline contours from the elevation grid via Marching Squares,
+     * separating connected water bodies into ocean vs lakes via flood-fill.
+     * @returns {Array<Array<{x:number,y:number}>>} polygon loops
      */
     extractCoastlines() {
         if (!this.elevationGrid) this.generateElevationGrid();
         const { rows, cols, data } = this.elevationGrid;
         const threshold = this.params.waterCoverage;
+
+        // Build base water mask and find connected components
+        const baseMask = data.map(row => row.map(v => v < threshold));
+        const blobs = this.computeWaterBlobs(baseMask, rows, cols);
+        const loops = [];
+
+        // Extract polygons for each blob
+        blobs.forEach(blob => {
+            const polyLoops = this.marchingSquaresOnMask(blob.mask);
+            loops.push(...polyLoops);
+        });
+        return loops;
+    }
+
+    /**
+     * Compute connected water blobs from a boolean mask.
+     * @param {boolean[][]} mask
+     * @param {number} rows
+     * @param {number} cols
+     * @returns {{mask:boolean[][], type:string}[]}
+     */
+    computeWaterBlobs(mask, rows, cols) {
+        const visited = Array.from({ length: rows }, () => Array(cols).fill(false));
+        const blobs = [];
+        for (let j = 0; j < rows; j++) {
+            for (let i = 0; i < cols; i++) {
+                if (!mask[j][i] || visited[j][i]) continue;
+                const stack = [[j, i]];
+                const blobMask = Array.from({ length: rows }, () => Array(cols).fill(false));
+                let touchesBoundary = false;
+                while (stack.length) {
+                    const [y, x] = stack.pop();
+                    if (visited[y][x]) continue;
+                    visited[y][x] = true;
+                    blobMask[y][x] = true;
+                    if (y === 0 || x === 0 || y === rows - 1 || x === cols - 1) touchesBoundary = true;
+                    // 4-neighbor flood-fill
+                    [[y-1,x],[y+1,x],[y,x-1],[y,x+1]].forEach(([ny,nx]) => {
+                        if (ny >= 0 && ny < rows && nx >= 0 && nx < cols
+                            && mask[ny][nx] && !visited[ny][nx]) {
+                            stack.push([ny,nx]);
+                        }
+                    });
+                }
+                blobs.push({ mask: blobMask, type: touchesBoundary ? 'ocean' : 'lake' });
+            }
+        }
+        return blobs;
+    }
+
+    /**
+     * Apply Marching Squares on a boolean mask to extract polygon loops.
+     * @param {boolean[][]} mask
+     * @returns {Array<Array<{x:number,y:number}>>}
+     */
+    marchingSquaresOnMask(mask) {
+        const rows = mask.length;
+        const cols = mask[0].length;
         const cell = this.cellSize;
-
-        // Helper to key points for linking segments
-        const key = p => `${p.x.toFixed(3)},${p.y.toFixed(3)}`;
-
-        // Collect segments
+        // Helper to key points
+        const keyPt = p => `${p.x.toFixed(3)},${p.y.toFixed(3)}`;
         const segments = [];
         for (let j = 0; j < rows - 1; j++) {
             for (let i = 0; i < cols - 1; i++) {
-                const a = data[j][i] < threshold ? 1 : 0;
-                const b = data[j][i+1] < threshold ? 1 : 0;
-                const c = data[j+1][i+1] < threshold ? 1 : 0;
-                const d = data[j+1][i] < threshold ? 1 : 0;
+                const a = mask[j][i] ? 1 : 0;
+                const b = mask[j][i+1] ? 1 : 0;
+                const c = mask[j+1][i+1] ? 1 : 0;
+                const d = mask[j+1][i] ? 1 : 0;
                 const idx = (a<<3)|(b<<2)|(c<<1)|d;
                 if (idx === 0 || idx === 15) continue;
-                // mid-edge points
                 const top    = { x: i*cell + cell/2, y: j*cell };
                 const right  = { x: i*cell + cell,   y: j*cell + cell/2 };
                 const bottom = { x: i*cell + cell/2, y: j*cell + cell };
@@ -237,37 +323,36 @@ class TopographyGenerator {
                 }
             }
         }
-
         // Link segments into loops
         const segMap = new Map();
         segments.forEach(([p1,p2]) => {
-            for (const pt of [p1,p2]) {
-                const k = key(pt);
+            [p1,p2].forEach(pt => {
+                const k = keyPt(pt);
                 (segMap.get(k) || segMap.set(k,[]).get(k)).push([p1,p2]);
-            }
+            });
         });
         const loops = [];
         const used = new Set();
         for (const seg of segments) {
-            const segKey = `${key(seg[0])}|${key(seg[1])}`;
+            const k0 = keyPt(seg[0]), k1 = keyPt(seg[1]);
+            const segKey = `${k0}|${k1}`;
             if (used.has(segKey)) continue;
-            const loop = [ seg[0], seg[1] ];
+            const loop = [seg[0], seg[1]];
             used.add(segKey);
             let current = seg[1];
             while (true) {
-                const k = key(current);
-                const nextSegs = (segMap.get(k) || []).filter(s => {
-                    const sKey = `${key(s[0])}|${key(s[1])}`;
-                    return !used.has(sKey);
+                const nextSegs = (segMap.get(keyPt(current)) || []).filter(s => {
+                    const kk0 = keyPt(s[0]), kk1 = keyPt(s[1]);
+                    const k = `${kk0}|${kk1}`;
+                    return !used.has(k);
                 });
                 if (!nextSegs.length) break;
-                const nextSeg = nextSegs[0];
-                const [p1,p2] = nextSeg;
-                const nxt = (key(p1) === key(current) ? p2 : p1);
+                const [p1,p2] = nextSegs[0];
+                const nxt = (keyPt(p1) === keyPt(current) ? p2 : p1);
                 loop.push(nxt);
-                used.add(`${key(p1)}|${key(p2)}`);
+                used.add(`${keyPt(p1)}|${keyPt(p2)}`);
                 current = nxt;
-                if (key(current) === key(loop[0])) break;
+                if (keyPt(current) === keyPt(loop[0])) break;
             }
             if (loop.length > 2) loops.push(loop);
         }

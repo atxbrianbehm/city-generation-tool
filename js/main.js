@@ -421,6 +421,7 @@ class CityGenerationTool {
             riverWidth,
             bayDirection
         });
+        console.debug('Topography preview [preview=' + preview + ']:', { coverage, mode, riverWidth, bayDirection });
         this.waterCells = topoGen.generate();
         this.coastPolygons = topoGen.extractCoastlines();
         // If requested, render only the topography so the user can preview the smooth coastlines

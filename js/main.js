@@ -284,6 +284,9 @@ class CityGenerationTool {
             this.renderer.render(this.currentCity);
             }
         });
+
+        // Initial topography preview on load
+        this.generateTopography(true);
     }
 
     updateWeightDisplay(slider) {

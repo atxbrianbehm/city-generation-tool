@@ -10,6 +10,8 @@ class CityGenerationTool {
         this.algorithms = {};
         this.renderer = new CityRenderer(this.canvas);
         this.currentCity = null;
+        // flag for throttled rendering
+        this.renderRequested = false;
         this.isGenerating = false;
         
         this.initializeAlgorithms();
@@ -45,14 +47,14 @@ class CityGenerationTool {
             });
         });
 
-        // Weight sliders (auto-enable on drag)
+        // Weight sliders (auto-enable on input ONLY; pointerdown interferes with drag)
         document.querySelectorAll('.blend-slider').forEach(slider => {
+            slider.addEventListener('pointerdown',   e => e.stopPropagation());
+            slider.addEventListener('pointermove',   e => e.stopPropagation());
+            slider.addEventListener('pointerup',     e => e.stopPropagation());
+            slider.addEventListener('pointercancel', e => e.stopPropagation());
+            slider.addEventListener('click',        e => e.stopPropagation());
             const associatedCheckbox = slider.closest('.algorithm-item').querySelector('input[type="checkbox"]');
-            slider.addEventListener('pointerdown', () => {
-                if (associatedCheckbox && !associatedCheckbox.checked) {
-                    associatedCheckbox.checked = true;
-                }
-            });
             slider.addEventListener('input', (e) => {
                 if (associatedCheckbox && !associatedCheckbox.checked) {
                     associatedCheckbox.checked = true;
@@ -63,6 +65,17 @@ class CityGenerationTool {
             });
         });
 
+        /* ------- Algorithm checkbox -> dim value text if unchecked, but always enable sliders ------- */
+        document.querySelectorAll('.algorithm-item').forEach(item => {
+            const checkbox = item.querySelector('input[type="checkbox"]');
+            const weightVal = item.querySelector('.weight-value');
+            const syncDim = () => {
+                if (weightVal) weightVal.style.opacity = checkbox.checked ? '1' : '0.4';
+            };
+            checkbox.addEventListener('change', syncDim);
+            syncDim();
+        });
+
         // Slider value indicators
         document.querySelectorAll('input[type="range"]').forEach(range => {
             if (range.dataset.hasIndicator) return;
@@ -70,6 +83,7 @@ class CityGenerationTool {
             span.className = 'slider-val';
             span.textContent = range.value;
             range.insertAdjacentElement('afterend', span);
+            span.style.minWidth = '30px';
             range.dataset.hasIndicator = 'true';
             range.addEventListener('input', () => {
                 span.textContent = range.value;
@@ -91,33 +105,112 @@ class CityGenerationTool {
         });
 
         // Canvas pan & zoom
+        this.requestRender = () => {
+            if (this.renderRequested) return;
+            this.renderRequested = true;
+            requestAnimationFrame(() => {
+                this.renderRequested = false;
+                this.renderer.render(this.currentCity);
+            });
+        };
         this.isPanning = false;
         let lastX = 0, lastY = 0;
         this.canvas.addEventListener('wheel', (e) => {
+            if (e.target !== this.canvas) return;
             if (!e.ctrlKey && !e.metaKey) return; // require modifier to avoid page zoom
-            e.preventDefault();
+            // e.preventDefault(); // Removed to test if this interferes with sidebar slider drag
+            const rect = this.canvas.getBoundingClientRect();
+            const canvasX = e.clientX - rect.left;
+            const canvasY = e.clientY - rect.top;
             const factor = e.deltaY < 0 ? 1.1 : 0.9;
-            this.renderer.zoomAt(e.offsetX, e.offsetY, factor);
-            this.renderer.render(this.currentCity);
+            this.renderer.zoomAt(canvasX, canvasY, factor);
+            this.requestRender();
         }, { passive: false });
 
         this.canvas.addEventListener('pointerdown', (e) => {
+            if (e.target !== this.canvas) return;
             if (e.button !== 0) return;
             this.isPanning = true;
             lastX = e.clientX;
             lastY = e.clientY;
-            this.canvas.setPointerCapture(e.pointerId);
+
         });
         this.canvas.addEventListener('pointermove', (e) => {
+            if (e.target !== this.canvas) return;
             if (!this.isPanning) return;
             const dx = e.clientX - lastX;
             const dy = e.clientY - lastY;
             lastX = e.clientX;
             lastY = e.clientY;
             this.renderer.pan(dx, dy);
-            this.renderer.render(this.currentCity);
+            this.requestRender();
         });
-        this.canvas.addEventListener('pointerup', () => { this.isPanning = false; });
+        this.canvas.addEventListener('pointerup', (e) => {
+            if (e.target !== this.canvas) return;
+            this.isPanning = false;
+        });
+
+        /* ------- Touch pinch-zoom & two-finger pan ------- */
+        this.activePointers = new Map();
+        this.previousPinchDistance = null;
+        this.previousMidpoint = null;
+
+        const getPinchDistance = () => {
+            const pts = Array.from(this.activePointers.values());
+            const dx = pts[0].x - pts[1].x;
+            const dy = pts[0].y - pts[1].y;
+            return Math.hypot(dx, dy);
+        };
+        const getMidpoint = () => {
+            const pts = Array.from(this.activePointers.values());
+            return { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
+        };
+
+        this.canvas.addEventListener('pointerdown', (e) => {
+            if (e.target !== this.canvas) return;
+            if (e.pointerType === 'touch') {
+                this.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            }
+        });
+        this.canvas.addEventListener('pointermove', (e) => {
+            if (e.target !== this.canvas) return;
+            if (e.pointerType !== 'touch' || !this.activePointers.has(e.pointerId)) return;
+            this.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            if (this.activePointers.size === 2) {
+                const rect = this.canvas.getBoundingClientRect();
+                const newDist = getPinchDistance();
+                // midpoint in *client* coords → canvas coords
+                const rawMid = getMidpoint();
+                const newMid = { x: rawMid.x - rect.left, y: rawMid.y - rect.top };
+                if (this.previousPinchDistance != null) {
+                    const factor = newDist / this.previousPinchDistance;
+                    this.renderer.zoomAt(newMid.x, newMid.y, factor);
+                    const dx = newMid.x - this.previousMidpoint.x;
+                    const dy = newMid.y - this.previousMidpoint.y;
+                    this.renderer.pan(dx, dy);
+                    this.requestRender();
+                }
+                this.previousPinchDistance = newDist;
+                this.previousMidpoint = newMid;
+            } else if (this.activePointers.size === 1 && this.isPanning) {
+                // single-finger pan already handled
+            }
+        });
+        const clearPointer = (e) => {
+            this.activePointers.delete(e.pointerId);
+            if (this.activePointers.size < 2) {
+                this.previousPinchDistance = null;
+                this.previousMidpoint = null;
+            }
+        };
+        this.canvas.addEventListener('pointerup', (e) => {
+            if (e.target !== this.canvas) return;
+            clearPointer(e);
+        });
+        this.canvas.addEventListener('pointercancel', (e) => {
+            if (e.target !== this.canvas) return;
+            clearPointer(e);
+        });
 
         /* ------- Drag-and-drop algorithm ordering (SortableJS) ------- */
         if (window.Sortable) {
@@ -157,7 +250,7 @@ class CityGenerationTool {
         });
         
         document.getElementById('generate-topo-btn').addEventListener('click', () => {
-            this.generateTopography();
+            this.generateTopography(true);
         });
 
         // Action buttons
@@ -300,7 +393,13 @@ class CityGenerationTool {
         };
     }
 
-    generateTopography() {
+    /**
+     * Generate water topography grid. If preview === true we immediately render
+     * the water-only layer so the user can see the result; otherwise we just
+     * compute the waterCells array for use during full city generation.
+     * @param {boolean} [preview=true]
+     */
+    generateTopography(preview = true) {
         const coverage = parseInt(document.getElementById('water-coverage').value) / 100;
         const mode = document.getElementById('topo-mode').value;
         const riverWidth = mode === 'river' ? parseInt(document.getElementById('river-width').value) : 0;
@@ -313,11 +412,17 @@ class CityGenerationTool {
             bayDirection
         });
         this.waterCells = topoGen.generate();
-        // Render only topography for preview
-        this.renderer.render({ buildings: [], roads: [], parks: [], water: this.waterCells });
+        // If requested, render only the topography so the user can preview it
+        if (preview) {
+            this.renderer.render({ buildings: [], roads: [], parks: [], water: this.waterCells });
+        }
     }
 
     async generateCity() {
+        // Ensure we have water data; auto-generate if the user hasn't done so yet.
+        if (!this.waterCells) {
+            this.generateTopography(false);
+        }
         if (this.isGenerating) return;
         
         this.isGenerating = true;
@@ -328,7 +433,7 @@ class CityGenerationTool {
             const globalParams = this.getGlobalParams();
             
             if (activeAlgorithms.length === 0) {
-                this.currentCity = { buildings: [], roads: [], parks: [], water: this.waterCells || [] };
+                this.currentCity = { buildings: [], roads: [], parks: [], water: this.waterCells };
             } else {
                 this.currentCity = await this.blendAlgorithms(activeAlgorithms, globalParams);
             }

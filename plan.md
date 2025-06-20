@@ -71,8 +71,8 @@
 - [ ] Visually highlight sliders that are active.
 
 ### 5. Drag-and-drop algorithm ordering
-- [ ] Wrap algorithm list in sortable `<ul>`; use minimal vanilla drag-n-drop or `SortableJS` (no build step) for touch + mouse.
-- [ ] Persist order to `localStorage` for session recall.
+- [x] Wrap algorithm list in sortable container using SortableJS.
+- [x] Persist order to `localStorage` for session recall.
 - [ ] Modify blending logic: top list item weight counts as “primary” multiplier or first evaluation.
 - [ ] Provide UI affordance (☰ grip icon).
 

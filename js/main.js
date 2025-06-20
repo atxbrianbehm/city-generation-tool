@@ -286,6 +286,35 @@ class CityGenerationTool {
             }
         });
 
+        // Drag-and-drop algorithm ordering using SortableJS
+        const algoList = document.getElementById('algorithm-list');
+        if (algoList && window.Sortable) {
+            // Restore saved order
+            try {
+                const saved = JSON.parse(localStorage.getItem('algorithmOrder') || '[]');
+                saved.forEach(id => {
+                    const checkbox = document.getElementById(id);
+                    if (checkbox) {
+                        const item = checkbox.closest('.algorithm-item');
+                        if (item) algoList.appendChild(item);
+                    }
+                });
+            } catch {}
+            Sortable.create(algoList, {
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                draggable: '.algorithm-item',
+                onEnd: () => {
+                    const order = Array.from(algoList.children).map(item => {
+                        const cb = item.querySelector('input[type="checkbox"]');
+                        return cb ? cb.id : null;
+                    }).filter(Boolean);
+                    localStorage.setItem('algorithmOrder', JSON.stringify(order));
+                    this.generateCity();
+                }
+            });
+        }
+
         // Initial topography preview on load
         this.generateTopography(true);
     }
